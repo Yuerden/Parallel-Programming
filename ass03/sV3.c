@@ -1,0 +1,356 @@
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<stdbool.h>
+#include<mpi.h>
+#include<string.h>
+
+// Result from last compute of world.
+unsigned char *g_resultData=NULL;
+
+// Current state of world. 
+unsigned char *g_data=NULL;
+
+// Current width of world.
+size_t g_worldWidth=0;
+
+/// Current height of world.
+size_t g_worldHeight=0;
+
+/// Current data length (product of width and height)
+size_t g_dataLength=0;  // g_worldWidth * g_worldHeight
+
+static inline void HL_initAllZeros( size_t worldWidth, size_t worldHeight )
+{
+    g_worldWidth = worldWidth;
+    g_worldHeight = worldHeight;
+    g_dataLength = g_worldWidth * g_worldHeight;
+
+    // calloc init's to all zeros
+    g_data = calloc( g_dataLength, sizeof(unsigned char));
+    g_resultData = calloc( g_dataLength, sizeof(unsigned char)); 
+}
+
+static inline void HL_initAllOnes( size_t worldWidth, size_t worldHeight )
+{
+    int i;
+    
+    g_worldWidth = worldWidth;
+    g_worldHeight = worldHeight;
+    g_dataLength = g_worldWidth * g_worldHeight;
+
+    g_data = calloc( g_dataLength, sizeof(unsigned char));
+
+    // set all rows of world to true
+    for( i = 0; i < g_dataLength; i++)
+    {
+	    g_data[i] = 1;
+    }
+    
+    g_resultData = calloc( g_dataLength, sizeof(unsigned char)); 
+}
+
+static inline void HL_initOnesInMiddle( size_t worldWidth, size_t worldHeight )
+{
+    int i;
+    
+    g_worldWidth = worldWidth;
+    g_worldHeight = worldHeight;
+    g_dataLength = g_worldWidth * g_worldHeight;
+
+    g_data = calloc( g_dataLength, sizeof(unsigned char));
+
+    // set first 1 rows of world to true
+    for( i = 10*g_worldWidth; i < 11*g_worldWidth; i++)
+    {
+	    if( (i >= ( 10*g_worldWidth + 10)) && (i < (10*g_worldWidth + 20)))
+	    {
+	        g_data[i] = 1;
+	    }
+    }
+    
+    g_resultData = calloc( g_dataLength, sizeof(unsigned char)); 
+}
+
+static inline void HL_initOnesAtCorners( size_t worldWidth, size_t worldHeight )
+{
+    g_worldWidth = worldWidth;
+    g_worldHeight = worldHeight;
+    g_dataLength = g_worldWidth * g_worldHeight;
+
+    g_data = calloc( g_dataLength, sizeof(unsigned char));
+
+    g_data[0] = 1; // upper left
+    g_data[worldWidth-1]=1; // upper right
+    g_data[(worldHeight * (worldWidth-1))]=1; // lower left
+    g_data[(worldHeight * (worldWidth-1)) + worldWidth-1]=1; // lower right
+    
+    g_resultData = calloc( g_dataLength, sizeof(unsigned char)); 
+}
+
+static inline void HL_initSpinnerAtCorner( size_t worldWidth, size_t worldHeight )
+{
+    g_worldWidth = worldWidth;
+    g_worldHeight = worldHeight;
+    g_dataLength = g_worldWidth * g_worldHeight;
+
+    g_data = calloc( g_dataLength, sizeof(unsigned char));
+
+    g_data[0] = 1; // upper left
+    g_data[1] = 1; // upper left +1
+    g_data[worldWidth-1]=1; // upper right
+    
+    g_resultData = calloc( g_dataLength, sizeof(unsigned char)); 
+}
+
+static inline void HL_initReplicator( size_t worldWidth, size_t worldHeight )
+{
+    size_t x, y;
+    
+    g_worldWidth = worldWidth;
+    g_worldHeight = worldHeight;
+    g_dataLength = g_worldWidth * g_worldHeight;
+
+    g_data = calloc( g_dataLength, sizeof(unsigned char));
+
+    x = worldWidth/2;
+    y = worldHeight/2;
+    
+    g_data[x + y*worldWidth + 1] = 1; 
+    g_data[x + y*worldWidth + 2] = 1;
+    g_data[x + y*worldWidth + 3] = 1;
+    g_data[x + (y+1)*worldWidth] = 1;
+    g_data[x + (y+2)*worldWidth] = 1;
+    g_data[x + (y+3)*worldWidth] = 1; 
+    
+    g_resultData = calloc( g_dataLength, sizeof(unsigned char)); 
+}
+
+static inline void HL_initMaster( unsigned int pattern, size_t worldWidth, size_t worldHeight )
+{
+    switch(pattern)
+    {
+    case 0:
+	    HL_initAllZeros( worldWidth, worldHeight );
+	    break;
+	
+    case 1:
+	    HL_initAllOnes( worldWidth, worldHeight );
+	    break;
+	
+    case 2:
+	    HL_initOnesInMiddle( worldWidth, worldHeight );
+	    break;
+	
+    case 3:
+	    HL_initOnesAtCorners( worldWidth, worldHeight );
+	    break;
+
+    case 4:
+	    HL_initSpinnerAtCorner( worldWidth, worldHeight );
+	    break;
+
+    case 5:
+	    HL_initReplicator( worldWidth, worldHeight );
+	    break;
+	
+    default:
+	    printf("Pattern %u has not been implemented \n", pattern);
+	    exit(-1);
+    }
+}
+
+static inline void HL_swap( unsigned char **pA, unsigned char **pB)
+{
+  unsigned char *temp = *pA;
+  *pA = *pB;
+  *pB = temp;
+}
+ 
+static inline unsigned int HL_countAliveCells(unsigned char* data, 
+					   size_t x0, 
+					   size_t x1, 
+					   size_t x2, 
+					   size_t y0, 
+					   size_t y1,
+					   size_t y2) 
+{
+  
+  return data[x0 + y0] + data[x1 + y0] + data[x2 + y0]
+    + data[x0 + y1] + data[x2 + y1]
+    + data[x0 + y2] + data[x1 + y2] + data[x2 + y2];
+}
+
+// Don't Modify this function or your submitty autograding will not work
+static inline void HL_printWorld(size_t iteration)
+{
+    int i, j;
+
+    printf("Print World - Iteration %lu \n", iteration);
+    
+    for( i = 0; i < g_worldHeight; i++)
+    {
+	    printf("Row %2d: ", i);
+	    for( j = 0; j < g_worldWidth; j++)
+	    {
+	        printf("%u ", (unsigned int)g_data[(i*g_worldWidth) + j]);
+	    }
+	    printf("\n");
+    }
+
+    printf("\n\n");
+}
+
+/// Serial version of standard byte-per-cell life.
+bool HL_iterateSerial(size_t iterations)
+{
+    size_t i, y, x;
+
+    for (i = 0; i < iterations; ++i)
+    {
+        for (y = 0; y < g_worldHeight; ++y)
+        {
+            size_t y0 = ((y + g_worldHeight - 1) % g_worldHeight) * g_worldWidth;
+            size_t y1 = y * g_worldWidth;
+            size_t y2 = ((y + 1) % g_worldHeight) * g_worldWidth;
+
+            for (x = 0; x < g_worldWidth; ++x)
+            {
+                size_t x0 = (x + g_worldWidth - 1) % g_worldWidth;
+                size_t x2 = (x + 1) % g_worldWidth;
+
+                unsigned int aliveCells = HL_countAliveCells(g_data, x0, x, x2, y0, y1, y2);
+                // rule B36/S23
+                g_resultData[x + y1] = (aliveCells == 3) || (aliveCells == 6 && !g_data[x + y1]) || (aliveCells == 2 && g_data[x + y1]) ? 1 : 0;
+            }
+        }
+        HL_swap(&g_data, &g_resultData);
+
+        // HL_printWorld(i);
+    }
+
+    return true;
+}
+
+// Updated function to exchange ghost rows between MPI ranks correctly
+static inline void exchangeGhostRows(int myrank, int numranks, size_t realHeight, size_t totalWidth) {
+    MPI_Request send_requests[2], recv_requests[2];
+    int prev_rank = (myrank - 1 + numranks) % numranks;
+    int next_rank = (myrank + 1) % numranks;
+
+    // Correct exchange logic
+    MPI_Isend(g_data + totalWidth, totalWidth, MPI_UNSIGNED_CHAR, prev_rank, 0, MPI_COMM_WORLD, &send_requests[0]); // Send top real row to prev
+    MPI_Isend(g_data + totalWidth * (realHeight - 2), totalWidth, MPI_UNSIGNED_CHAR, next_rank, 1, MPI_COMM_WORLD, &send_requests[1]); // Send bottom real row to next
+
+    MPI_Irecv(g_data, totalWidth, MPI_UNSIGNED_CHAR, prev_rank, 1, MPI_COMM_WORLD, &recv_requests[0]); // Receive top ghost row from prev
+    MPI_Irecv(g_data + totalWidth * (realHeight - 1), totalWidth, MPI_UNSIGNED_CHAR, next_rank, 0, MPI_COMM_WORLD, &recv_requests[1]); // Receive bottom ghost row from next
+
+    MPI_Waitall(2, recv_requests, MPI_STATUSES_IGNORE);
+    MPI_Waitall(2, send_requests, MPI_STATUSES_IGNORE);
+}
+
+
+int main(int argc, char *argv[]) {
+    
+    // Variables for the simulation
+    int myrank, numranks;
+    unsigned int pattern, worldSize, iterations;
+    double startTime, endTime;
+
+    // Check command-line arguments
+    if (argc != 4) {
+        if (myrank == 0) {
+            printf("Usage: mpirun -np <num_processes> ./highlife <pattern> <world_size> <iterations>\n");
+        }
+        MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
+    }
+
+    pattern = atoi(argv[1]);
+    worldSize = atoi(argv[2]);
+    iterations = atoi(argv[3]);
+    printf("Rank %d: Pattern: %u, WorldSize: %u, Iterations: %u\n", myrank, pattern, worldSize, iterations);
+
+    // Setup MPI
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+    MPI_Comm_size(MPI_COMM_WORLD, &numranks);
+
+    
+    // Calculate chunk height
+    size_t chunkHeight = worldSize / numranks;
+    size_t realHeight = chunkHeight + 2; // Including ghost rows
+    printf("Rank %d: ChunkHeight: %zu, RealHeight: %zu\n", myrank, chunkHeight, realHeight);
+    
+    // Initialization specific for Rank 0
+    if (myrank == 0) {
+        startTime = MPI_Wtime();
+
+        // Initialize a local copy of the whole NxN Cell World
+        HL_initMaster(pattern, worldSize, worldSize);
+        
+        g_worldWidth = worldSize;
+        g_worldHeight = worldSize; // Assuming full world size before splitting
+
+        // Allocation for Rank 0's data
+        g_dataLength = g_worldWidth * (chunkHeight + 2); // +2 for ghost rows
+        g_data = calloc(g_dataLength, sizeof(unsigned char));
+        printf("Rank 0: World initialized. Width: %zu, Height: %zu\n", g_worldWidth, g_worldHeight);
+
+        // Scatter the initialized world to all ranks
+        // Since Rank 0 also needs a part of the world, use MPI_Scatter with special handling
+        unsigned char* scatterBuffer = malloc(worldSize * worldSize * sizeof(unsigned char)); // Temporary buffer for scattering
+        memcpy(scatterBuffer, g_data, worldSize * worldSize * sizeof(unsigned char)); // Copy initialized world into buffer
+        
+        MPI_Scatter(scatterBuffer, worldSize * chunkHeight, MPI_UNSIGNED_CHAR,
+                    g_data + worldSize, worldSize * chunkHeight, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+        
+        free(scatterBuffer);
+    } else {
+        // Other ranks prepare to receive their part of the world
+        g_worldWidth = worldSize;
+        g_dataLength = g_worldWidth * (chunkHeight + 2); // Including ghost rows
+        g_data = calloc(g_dataLength, sizeof(unsigned char));
+
+        MPI_Scatter(NULL, 0, MPI_DATATYPE_NULL,
+                    g_data + worldSize, worldSize * chunkHeight, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+    }
+
+    // Main simulation loop
+    for (int i = 0; i < iterations; i++) {
+        // Exchange "ghost" row data with MPI Ranks using MPI_Isend/Irecv
+        exchangeGhostRows(myrank, numranks, realHeight, g_worldWidth);
+        // Update rest of the universe using serial HighLife functions
+        HL_iterateSerial(1);
+    }
+
+    // Synchronize before proceeding
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Rank 0 calculates and prints the execution time
+    if (myrank == 0) {
+        endTime = MPI_Wtime();
+        printf("Simulation time: %f seconds\n", endTime - startTime);
+        // Gather the final world state at Rank 0 for output
+        unsigned char* finalWorld = NULL;
+        // Allocate memory to receive the final world state
+        finalWorld = malloc(worldSize * worldSize * sizeof(unsigned char));
+        // Each rank sends its portion of the world back to Rank 0
+        MPI_Gather(g_data + g_worldWidth, g_worldWidth * chunkHeight, MPI_UNSIGNED_CHAR,
+                    finalWorld, g_worldWidth * chunkHeight, MPI_UNSIGNED_CHAR, 0, MPI_COMM_WORLD);
+        // Replace the g_data pointer with the complete world before printing
+        unsigned char* temp = g_data;
+        g_data = finalWorld;
+        HL_printWorld(iterations); // Assuming iterations is the desired final iteration count
+        // Reset the g_data pointer and free the final world memory
+        g_data = temp;
+        free(finalWorld);
+    
+    }
+
+// Finalize MPI and clean up...
+free(g_data);
+free(g_resultData);
+MPI_Finalize();
+return 0;
+}
