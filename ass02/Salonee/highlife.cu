@@ -55,8 +55,8 @@ bool HL_kernelLaunch(unsigned char** d_data,
                     unsigned char** d_resultData, 
                     size_t worldWidth, 
                     size_t worldHeight, 
-                    size_t threadsCount, 
-                    ushort rank) 
+                    int threadsCount, 
+                    int rank) 
 {
    
     // Determine block and grid dimensions based on the number of threads
