@@ -55,14 +55,26 @@ bool HL_kernelLaunch(unsigned char** d_data,
                     unsigned char** d_resultData, 
                     size_t worldWidth, 
                     size_t worldHeight, 
-                    size_t iterations, 
-                    ushort threadsCount) 
+                    size_t threadsCount, 
+                    ushort rank) 
 {
    
     // Determine block and grid dimensions based on the number of threads
     dim3 blockDim(threadsCount, 1, 1);
     dim3 gridDim((worldWidth * worldHeight + blockDim.x - 1) / blockDim.x, 1, 1);
 
+    //Set CUDA Device based on MPI rank.
+    cudaError_t cE; // Declare the error variable
+    int cudaDeviceCount; // Declare the device count variable
+    if( (cE = cudaGetDeviceCount( &cudaDeviceCount)) != cudaSuccess ) {
+        printf(" Unable to determine cuda device count, error is %d, count is %d\n", cE, cudaDeviceCount );
+        exit(-1);
+    }
+    if( (cE = cudaSetDevice( rank % cudaDeviceCount )) != cudaSuccess ) {
+        printf(" Unable to have rank %d set to cuda device %d, error is %d \n", rank, (rank % cudaDeviceCount), cE);
+        exit(-1);
+    }
+    
     for (size_t i = 0; i < iterations; i++) {
         // Launch the CUDA kernel
         HL_kernel<<<gridDim, blockDim>>>(*d_data, worldWidth, worldHeight, *d_resultData);

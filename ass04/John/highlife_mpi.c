@@ -7,7 +7,6 @@
 #include<stdbool.h>
 #include<string.h>
 #include<mpi.h>
-#include <cuda_runtime.h>
 
 extern bool HL_kernelLaunch(unsigned char **d_data,
                          unsigned char **d_resultData,
@@ -75,18 +74,6 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
-    //Set CUDA Device based on MPI rank.
-    cudaError_t cE; // Declare the error variable
-    int cudaDeviceCount; // Declare the device count variable
-    if( (cE = cudaGetDeviceCount( &cudaDeviceCount)) != cudaSuccess ) {
-        printf(" Unable to determine cuda device count, error is %d, count is %d\n", cE, cudaDeviceCount );
-        exit(-1);
-    }
-    if( (cE = cudaSetDevice( rank % cudaDeviceCount )) != cudaSuccess ) {
-        printf(" Unable to have rank %d set to cuda device %d, error is %d \n", rank, (rank % cudaDeviceCount), cE);
-        exit(-1);
-    }
-
     //Start time with MPI_Wtime.
     double startTime;
     double endTime;
