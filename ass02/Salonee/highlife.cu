@@ -14,6 +14,12 @@ extern "C"
                          int rank);
 }
 
+static inline void HL_swap(unsigned char **pA, unsigned char **pB) {
+    unsigned char *temp = *pA;
+    *pA = *pB;
+    *pB = temp;
+}
+
 __global__ void HL_kernel(const unsigned char* d_data, 
                         unsigned int worldWidth, 
                         unsigned int worldHeight, 
@@ -75,7 +81,7 @@ bool HL_kernelLaunch(unsigned char** d_data,
         exit(-1);
     }
     
-    for (size_t i = 0; i < iterations; i++) {
+    for (size_t i = 0; i < 1; i++) {
         // Launch the CUDA kernel
         HL_kernel<<<gridDim, blockDim>>>(*d_data, worldWidth, worldHeight, *d_resultData);
 
