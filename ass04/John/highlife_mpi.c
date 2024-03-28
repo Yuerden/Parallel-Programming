@@ -79,8 +79,8 @@ int main(int argc, char *argv[])
         printf(" Unable to determine cuda device count, error is %d, count is %d\n", cE, cudaDeviceCount );
         exit(-1);
     }
-    if( (cE = cudaSetDevice( myrank % cudaDeviceCount )) != cudaSuccess ) {
-        printf(" Unable to have rank %d set to cuda device %d, error is %d \n", myrank, (myrank % cudaDeviceCount), cE);
+    if( (cE = cudaSetDevice( rank % cudaDeviceCount )) != cudaSuccess ) {
+        printf(" Unable to have rank %d set to cuda device %d, error is %d \n", rank, (rank % cudaDeviceCount), cE);
         exit(-1);
     }
 
@@ -152,17 +152,16 @@ int main(int argc, char *argv[])
     }
 
     //if (Output Argument is True) { Printf my Rank’s chunk of universe. }
-    if(true) {
+    if(true) { // use the 'output' variable to control this block
         int i, j;
-        printf("Print World - Iteration: %d Rank: %d\n", iteration, myrank);
-        for( i = 0; i < worldHeight; i++) {
+        printf("Print World - Iteration: %d Rank: %d\n", iterations, rank);
+        for(i = 0; i < worldSize; i++) {
             printf("Row %2d: ", i);
-            for( j = 0; j < worldWidth; j++) {
-                printf("%u ", (unsigned int)(*currGrid)[((i+1)*worldWidth) + j]); //need the i+1 to skip the ghost row
+            for(j = 0; j < worldSize; j++) {
+                printf("%u ", (unsigned int)currGrid[((i+1)*worldSize) + j]);
             }
             printf("\n");
         }
-
         printf("\n\n");
     }
 
