@@ -15,19 +15,19 @@ extern bool HL_kernelLaunch(unsigned char **d_data,
                          int threadsCount,
                          int rank);
 
-static inline void HL_initReplicator( unsigned char **curGrid, size_t worldWidth, size_t worldHeight )
+static inline void HL_initReplicator( unsigned char **currGrid, size_t worldWidth, size_t worldHeight )
 {
     size_t x, y;
 
     x = worldWidth/2;
     y = worldHeight/2;
 
-    (*curGrid)[x + y*worldWidth + 1] = 1;
-    (*curGrid)[x + y*worldWidth + 2] = 1;
-    (*curGrid)[x + y*worldWidth + 3] = 1;
-    (*curGrid)[x + (y+1)*worldWidth] = 1;
-    (*curGrid)[x + (y+2)*worldWidth] = 1;
-    (*curGrid)[x + (y+3)*worldWidth] = 1;
+    (*currGrid)[x + y*worldWidth + 1] = 1;
+    (*currGrid)[x + y*worldWidth + 2] = 1;
+    (*currGrid)[x + y*worldWidth + 3] = 1;
+    (*currGrid)[x + (y+1)*worldWidth] = 1;
+    (*currGrid)[x + (y+2)*worldWidth] = 1;
+    (*currGrid)[x + (y+3)*worldWidth] = 1;
 }
 
 static inline void HL_swap( unsigned char **pA, unsigned char **pB)
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 {
     //Setup MPI
     MPI_Init(&argc, &argv);
-    int rank, size, 
+    int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
         HL_kernelLaunch(&currGrid, &nextGrid, worldSize, totalNumRows, threadCount, rank);
 
         // Swap grids for the next iteration
-        HL_swap(&curGrid, &nextGrid);
+        HL_swap(&currGrid, &nextGrid);
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
