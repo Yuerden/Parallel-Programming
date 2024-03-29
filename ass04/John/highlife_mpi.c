@@ -104,6 +104,18 @@ int main(int argc, char *argv[])
         //Use MPI_Wait or MPI_Waitall to ensure all message are sent/recv’ed.
         //swapGhostRows(currGrid, rank, size, worldSize, totalNumRows);
         
+        if(true) { // use the 'output' variable to control this block
+            int i, j;
+            printf("Print World - Iteration: %d Rank: %d\n", i, rank);
+            for(i = 0; i < worldSize; i++) {
+                printf("Row %2d: ", i);
+                for(j = 0; j < worldSize; j++) {
+                    printf("%u ", (unsigned int)currGrid[((i+1)*worldSize) + j]);
+                }
+                printf("\n");
+            }
+            printf("\n\n");
+        }
 
         if(rank%2==0){
             MPI_Isend(currGrid + (totalNumRows - 2) * worldSize, worldSize, MPI_UNSIGNED_CHAR, nextRank, 1, MPI_COMM_WORLD, &request); //sends top ghost row to bottom rank (my buttom actual)
@@ -123,21 +135,6 @@ int main(int argc, char *argv[])
         // Do rest of universe update as done in assignment 2 using CUDA HighLife kernel.
         HL_kernelLaunch(&currGrid, &nextGrid, worldSize, totalNumRows, threadCount, rank);
 
-        // Swap grids for the next iteration
-        HL_swap(&currGrid, &nextGrid);
-
-        if(true) { // use the 'output' variable to control this block
-            int i, j;
-            printf("Print World - Iteration: %d Rank: %d\n", i, rank);
-            for(i = 0; i < worldSize; i++) {
-                printf("Row %2d: ", i);
-                for(j = 0; j < worldSize; j++) {
-                    printf("%u ", (unsigned int)currGrid[((i+1)*worldSize) + j]);
-                }
-                printf("\n");
-            }
-            printf("\n\n");
-        }
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
