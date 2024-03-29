@@ -89,14 +89,6 @@ int main(int argc, char *argv[])
     HL_initReplicator(&singleGrid, worldSize, worldSize);
     memcpy(currGrid + worldSize, singleGrid, worldSize*worldSize);
 
-    //For ghost testing purposes
-    if(rank==0){
-        int k;
-        for(k=0; k< worldSize; k++){
-            currGrid[k+worldSize] = 1;
-        }
-    }
-
     // Parallel iteration
     int prevRank = (rank - 1 + size) % size;
     int nextRank = (rank + 1) % size;
@@ -106,7 +98,7 @@ int main(int argc, char *argv[])
         //Use MPI_Wait or MPI_Waitall to ensure all message are sent/recv’ed.
         //swapGhostRows(currGrid, rank, size, worldSize, totalNumRows);
         
-        if(true) { // use the 'output' variable to control this block
+        if(false) { // print each before the interation so dont skip the initial one
             int i, j;
             printf("Print World - Iteration: %d Rank: %d\n", i, rank);
             for(i = 0; i < worldSize; i++) {
@@ -131,8 +123,6 @@ int main(int argc, char *argv[])
             MPI_Isend(currGrid + worldSize, worldSize, MPI_UNSIGNED_CHAR, prevRank, 4, MPI_COMM_WORLD, &request); //Sends bottom ghost row to top rank (my top actual)
         }
         MPI_Barrier(MPI_COMM_WORLD);
-        if(rank==0)
-            printf("Iteration = %d\n", i);
 
         // Do rest of universe update as done in assignment 2 using CUDA HighLife kernel.
         HL_kernelLaunch(&currGrid, &nextGrid, worldSize, totalNumRows, threadCount, rank);
@@ -148,7 +138,7 @@ int main(int argc, char *argv[])
     }
 
     //if (Output Argument is True) { Printf my Rank’s chunk of universe. }
-    if(true) { // use the 'output' variable to control this block
+    if(false) { // print ending world state for each rank
         int i, j;
         printf("Print World - Iteration: %d Rank: %d\n", iterations, rank);
         for(i = 0; i < worldSize; i++) {
