@@ -28,6 +28,12 @@ static inline void HL_initReplicator( unsigned char **currGrid, size_t worldWidt
     (*currGrid)[x + (y+1)*worldWidth] = 1;
     (*currGrid)[x + (y+2)*worldWidth] = 1;
     (*currGrid)[x + (y+3)*worldWidth] = 1;
+    
+    //For ghost testing purposes
+    int i;
+    for(i=0; i< worldWidth; i++){
+        (*currGrid)[i] = 1;
+    }
 }
 
 static inline void HL_swap( unsigned char **pA, unsigned char **pB)
