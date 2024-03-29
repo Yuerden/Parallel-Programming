@@ -28,12 +28,6 @@ static inline void HL_initReplicator( unsigned char **currGrid, size_t worldWidt
     (*currGrid)[x + (y+1)*worldWidth] = 1;
     (*currGrid)[x + (y+2)*worldWidth] = 1;
     (*currGrid)[x + (y+3)*worldWidth] = 1;
-    
-    //For ghost testing purposes
-    int i;
-    for(i=0; i< worldWidth; i++){
-        (*currGrid)[i] = 1;
-    }
 }
 
 static inline void HL_swap( unsigned char **pA, unsigned char **pB)
@@ -94,6 +88,14 @@ int main(int argc, char *argv[])
     unsigned char *nextGrid = (unsigned char *)calloc(dataLength,sizeof(unsigned char)); //next +2grid
     HL_initReplicator(&singleGrid, worldSize, worldSize);
     memcpy(currGrid + worldSize, singleGrid, worldSize*worldSize);
+
+    //For ghost testing purposes
+    if(rank==0){
+        int k;
+        for(k=0; k< worldWidth; k++){
+            (*currGrid)[k] = 1;
+        }
+    }
 
     // Parallel iteration
     int prevRank = (rank - 1 + size) % size;
