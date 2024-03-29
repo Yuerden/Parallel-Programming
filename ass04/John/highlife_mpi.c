@@ -70,12 +70,12 @@ int main(int argc, char *argv[])
     iterations = atoi(argv[3]);
     threadCount = atoi(argv[4]);
     //For checking correctness
-    bool output;
-    if(argc > 5){
-        output = strcmp(argv[5], "true") == 0;
-    }else{
-        output = false;
-    }
+    // bool output;
+    // if(argc > 5){
+    //     output = strcmp(argv[5], "true") == 0;
+    // }else{
+    //     output = false;
+    // }
 
     //Allocate My Rank’s chunk of the universe, init pattern 5 (middle of my rank’s chuallocate space for "ghost" rows.
     // Initialize variables
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
     }
 
     //if (Output Argument is True) { Printf my Rank’s chunk of universe. }
-    if(output) { // use the 'output' variable to control this block
+    if(true) { // use the 'output' variable to control this block
         int i, j;
         printf("Print World - Iteration: %d Rank: %d\n", iterations, rank);
         for(i = 0; i < worldSize; i++) {
