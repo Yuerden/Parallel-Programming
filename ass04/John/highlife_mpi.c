@@ -77,7 +77,8 @@ int main(int argc, char *argv[])
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    
+    MPI_Request request;
+
     //Start time with MPI_Wtime.
     double startTime;
     double endTime;
@@ -121,11 +122,26 @@ int main(int argc, char *argv[])
     memcpy(currGrid + worldSize, singleGrid, worldSize*worldSize); //
 
     // Parallel iteration
+    int prevRank = (rank - 1 + size) % size;
+    int nextRank = (rank + 1) % size;
     for (int i = 0; i < iterations; i++) {
         // Swap ghost rows
         //Exchange row data with MPI Ranks using MPI_Isend/Irecv.
         //Use MPI_Wait or MPI_Waitall to ensure all message are sent/recv’ed.
-        swapGhostRows(currGrid, rank, size, worldSize, totalNumRows);
+        //swapGhostRows(currGrid, rank, size, worldSize, totalNumRows);
+        
+
+        if(rank%2==0){
+            MPI_Isend(currGrid + worldWidth, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 0, MPI_COMM_WORLD, &request); //Sends bottom ghost row to top rank (my top actual)
+            MPI_Irecv(currGrid, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 1, MPI_COMM_WORLD, &request); //Replace my top ghost from top rank
+            MPI_Isend(currGrid + (numRows - 2) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 1, MPI_COMM_WORLD, &request); //sends top ghost row to bottom rank (my buttom actual)
+            MPI_Irecv(currGrid + (numRows - 1) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 0, MPI_COMM_WORLD, &request); //Replace my bottom ghost from buttom rank
+        } else {
+            MPI_Irecv(currGrid, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 1, MPI_COMM_WORLD, &request); //Replace my top ghost from top rank
+            MPI_Isend(currGrid + worldWidth, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 0, MPI_COMM_WORLD, &request); //Sends bottom ghost row to top rank (my top actual)
+            MPI_Irecv(currGrid + (numRows - 1) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 0, MPI_COMM_WORLD, &request); //Replace my bottom ghost from buttom rank
+            MPI_Isend(currGrid + (numRows - 2) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 1, MPI_COMM_WORLD, &request); //sends top ghost row to bottom rank (my buttom actual)
+        }
         MPI_Barrier(MPI_COMM_WORLD);
         if(rank==0)
             printf("Iteration = %d\n", i);
