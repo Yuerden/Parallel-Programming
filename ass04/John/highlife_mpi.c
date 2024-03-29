@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     threadCount = atoi(argv[4]);
     //For checking correctness
     bool output;
-    if(argc > 4){
+    if(argc > 5){
         output = strcmp(argv[5], "true") == 0;
     }else{
         output = false;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     unsigned char *singleGrid = (unsigned char *)calloc(worldSize*worldSize,sizeof(unsigned char)); //needed data +0grid
     unsigned char *nextGrid = (unsigned char *)calloc(dataLength,sizeof(unsigned char)); //next +2grid
     HL_initReplicator(&singleGrid, worldSize, worldSize);
-    memcpy(currGrid + worldSize, singleGrid, worldSize*worldSize); //
+    memcpy(currGrid + worldSize, singleGrid, worldSize*worldSize);
 
     // Parallel iteration
     int prevRank = (rank - 1 + size) % size;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
     }
 
     //if (Output Argument is True) { Printf my Rank’s chunk of universe. }
-    if(true) { // use the 'output' variable to control this block
+    if(output) { // use the 'output' variable to control this block
         int i, j;
         printf("Print World - Iteration: %d Rank: %d\n", iterations, rank);
         for(i = 0; i < worldSize; i++) {
