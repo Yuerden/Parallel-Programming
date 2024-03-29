@@ -35,8 +35,7 @@ execute_runs() {
     echo "$execution_time, $cell_updates_per_sec" >> performance_results2.csv
 }
 
-# Compile your highlife-exe program here if needed
-# nvcc ... or gcc ...
+
 
 # Execute runs for one configuration (12 GPU/MPI ranks)
 execute_runs 12 5 16384 128 256
