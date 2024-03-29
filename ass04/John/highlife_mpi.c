@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
     if(rank==0){
         int k;
         for(k=0; k< worldSize; k++){
-            currGrid[k] = 1;
+            currGrid[k+worldSize] = 1;
         }
     }
 
