@@ -125,6 +125,19 @@ int main(int argc, char *argv[])
 
         // Swap grids for the next iteration
         HL_swap(&currGrid, &nextGrid);
+
+        if(true) { // use the 'output' variable to control this block
+            int i, j;
+            printf("Print World - Iteration: %d Rank: %d\n", i, rank);
+            for(i = 0; i < worldSize; i++) {
+                printf("Row %2d: ", i);
+                for(j = 0; j < worldSize; j++) {
+                    printf("%u ", (unsigned int)currGrid[((i+1)*worldSize) + j]);
+                }
+                printf("\n");
+            }
+            printf("\n\n");
+        }
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
