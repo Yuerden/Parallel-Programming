@@ -36,8 +36,6 @@ execute_runs() {
     echo "$execution_time, $cell_updates_per_sec" >> performance_results.csv
 }
 
-# Compile your highlife-exe program here if needed
-# nvcc ... or gcc ...
 
 # Execute runs for different configurations
 for num_procs in 1 2 3 4 5 6; do
