@@ -38,38 +38,6 @@ static inline void HL_swap( unsigned char **pA, unsigned char **pB)
 }
 
 
-//!!!!!!Might need to change order to reflect alex's method!!!!!!!!!
-// This function is used to swap ghost rows so that each local grid will have enough context to
-// update their particular cell. The top ghost row is filled with the bottom edge row from the process directly above it,
-// and the bottom ghost row is filled with the top edge row from the process directly below it.
-void swapGhostRows(unsigned char* currGrid, int rank, int size, size_t worldWidth, size_t numRows) {
-
-    // Get the previous or next rank, including the logic for wrap around.
-    int prevRank = (rank - 1 + size) % size;
-    int nextRank = (rank + 1) % size;
-
-    if(rank%2==0){
-        MPI_Isend(currGrid + worldWidth, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 0, MPI_COMM_WORLD, &sendRequests[0]); //Sends bottom ghost row to top rank (my top actual)
-        MPI_Irecv(currGrid, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 1, MPI_COMM_WORLD, &recvRequests[1]); //Replace my top ghost from top rank
-        MPI_Isend(currGrid + (numRows - 2) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 1, MPI_COMM_WORLD, &sendRequests[1]); //sends top ghost row to bottom rank (my buttom actual)
-        MPI_Irecv(currGrid + (numRows - 1) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 0, MPI_COMM_WORLD, &recvRequests[0]); //Replace my bottom ghost from buttom rank
-    } else {
-        MPI_Irecv(currGrid, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 1, MPI_COMM_WORLD, &recvRequests[1]); //Replace my top ghost from top rank
-        MPI_Isend(currGrid + worldWidth, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 0, MPI_COMM_WORLD, &sendRequests[0]); //Sends bottom ghost row to top rank (my top actual)
-        MPI_Irecv(currGrid + (numRows - 1) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 0, MPI_COMM_WORLD, &recvRequests[0]); //Replace my bottom ghost from buttom rank
-        MPI_Isend(currGrid + (numRows - 2) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 1, MPI_COMM_WORLD, &sendRequests[1]); //sends top ghost row to bottom rank (my buttom actual)
-    }
-    // // Sends the top real row to the previous rank, and sends the bottom real row to the next rank
-    // MPI_Isend(currGrid + worldWidth, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 0, MPI_COMM_WORLD, &sendRequests[0]); //Sends bottom ghost row to top rank (my top actual)
-    // MPI_Isend(currGrid + (numRows - 2) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 1, MPI_COMM_WORLD, &sendRequests[1]); //sends top ghost row to bottom rank (my buttom actual)
-
-    // // Receive of the bottom ghost row from the next rank and top ghost row from the previous rank
-    // MPI_Irecv(currGrid + (numRows - 1) * worldWidth, worldWidth, MPI_UNSIGNED_CHAR, nextRank, 0, MPI_COMM_WORLD, &recvRequests[0]); //Replace my bottom ghost from buttom rank
-    // MPI_Irecv(currGrid, worldWidth, MPI_UNSIGNED_CHAR, prevRank, 1, MPI_COMM_WORLD, &recvRequests[1]); //Replace my top ghost from top rank
-
-}
-
-
 int main(int argc, char *argv[])
 {
     //Setup MPI
