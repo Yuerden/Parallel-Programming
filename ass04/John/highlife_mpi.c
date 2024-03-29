@@ -92,8 +92,8 @@ int main(int argc, char *argv[])
     //For ghost testing purposes
     if(rank==0){
         int k;
-        for(k=0; k< worldWidth; k++){
-            (*currGrid)[k] = 1;
+        for(k=0; k< worldSize; k++){
+            currGrid[k] = 1;
         }
     }
 
